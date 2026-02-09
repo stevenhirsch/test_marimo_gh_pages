@@ -35,7 +35,6 @@ jobs:
             - name: Export notebook to HTML
               run: |
                   marimo export html-wasm fitness_dashboard.py -o dist --mode run
-                  cp fitness_data.csv dist/
                   touch dist/.nojekyll
 
             - name: Upload Pages Artifact

@@ -17,8 +17,19 @@ def _():
 
 @app.cell
 def _(pd):
-    # Read fitness data from CSV file
-    fitness_df = pd.read_csv('fitness_data.csv')
+    # Define fitness data directly (for WASM compatibility)
+    fitness_data = {
+        'name': ['Alex Johnson', 'Sam Williams', 'Jordan Lee', 'Casey Martinez',
+                 'Taylor Brown', 'Morgan Davis', 'Riley Garcia', 'Avery Wilson',
+                 'Quinn Anderson', 'Skylar Thomas'],
+        'strength': [245.3, 312.7, 178.9, 289.4, 198.2, 267.8, 223.5, 301.6, 186.4, 254.1],
+        'power': [1823.5, 2134.8, 1456.2, 1987.3, 1678.9, 2245.6, 1534.7, 2089.4, 1712.3, 1891.2],
+        'endurance': [67.2, 45.8, 78.5, 52.4, 82.1, 38.9, 71.3, 48.7, 75.6, 63.8],
+        'movement_quality': [88.4, 72.1, 94.7, 81.9, 69.3, 91.2, 77.6, 85.8, 93.5, 79.8],
+        'mobility': [79.3, 91.2, 68.5, 85.7, 73.8, 88.4, 82.1, 76.9, 67.2, 94.6]
+    }
+
+    fitness_df = pd.DataFrame(fitness_data)
 
     # Calculate percentiles for each metric
     metrics = ['strength', 'power', 'endurance', 'movement_quality', 'mobility']
