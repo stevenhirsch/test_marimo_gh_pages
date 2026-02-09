@@ -30,7 +30,7 @@ jobs:
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
-                  pip install marimo plotly pandas numpy
+                  pip install marimo matplotlib pandas numpy
 
             - name: Export notebook to HTML
               run: |

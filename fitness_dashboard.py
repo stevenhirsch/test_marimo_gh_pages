@@ -8,10 +8,11 @@ app = marimo.App(width="medium")
 def _():
     import marimo as mo
     import pandas as pd
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from math import pi
 
-    return go, make_subplots, mo, pd
+    return mo, pd, pi, plt
 
 
 @app.cell
@@ -23,7 +24,6 @@ def _(pd):
     metrics = ['strength', 'power', 'endurance', 'movement_quality', 'mobility']
     for metric in metrics:
         fitness_df[f'{metric}_percentile'] = fitness_df[metric].rank(pct=True) * 100
-
     return (fitness_df,)
 
 
@@ -47,13 +47,13 @@ def _(mo, person_dropdown):
 
 
 @app.cell
-def _(fitness_df, go, make_subplots, person_dropdown):
+def _(fitness_df, mo, person_dropdown, pi, plt):
     # Get selected person's data
     selected_person = person_dropdown.value
     person_data = fitness_df[fitness_df['name'] == selected_person].iloc[0]
 
-    # Prepare data for radial plot (percentiles)
-    categories = ['Strength', 'Power', 'Endurance', 'Movement Quality', 'Mobility']
+    # Prepare data
+    categories = ['Strength', 'Power', 'Endurance', 'Movement\nQuality', 'Mobility']
     percentiles = [
         person_data['strength_percentile'],
         person_data['power_percentile'],
@@ -61,8 +61,6 @@ def _(fitness_df, go, make_subplots, person_dropdown):
         person_data['movement_quality_percentile'],
         person_data['mobility_percentile']
     ]
-
-    # Prepare data for bar chart (raw values)
     raw_values = [
         person_data['strength'],
         person_data['power'],
@@ -71,67 +69,65 @@ def _(fitness_df, go, make_subplots, person_dropdown):
         person_data['mobility']
     ]
 
-    # Create subplots: 1 row, 2 columns
-    fig = make_subplots(
-        rows=1, cols=2,
-        subplot_titles=(f'{selected_person} - Percentile Rankings',
-                       f'{selected_person} - Raw Values'),
-        specs=[[{'type': 'polar'}, {'type': 'bar'}]],
-        horizontal_spacing=0.15
-    )
+    # Create figure with two subplots
+    fig = plt.figure(figsize=(14, 6))
+    fig.patch.set_facecolor('white')
 
-    # Radial plot (radar chart) for percentiles
-    fig.add_trace(
-        go.Scatterpolar(
-            r=percentiles + [percentiles[0]],  # Close the polygon
-            theta=categories + [categories[0]],
-            fill='toself',
-            name='Percentile',
-            line=dict(color='rgb(0, 123, 255)', width=2),
-            fillcolor='rgba(0, 123, 255, 0.3)'
-        ),
-        row=1, col=1
-    )
+    # Radar chart (left) - Percentile Rankings
+    ax1 = plt.subplot(121, projection='polar')
+    ax1.set_facecolor('white')
 
-    # Bar chart for raw values
+    # Number of variables
+    num_vars = len(categories)
+
+    # Compute angle for each axis
+    angles = [n / float(num_vars) * 2 * pi for n in range(num_vars)]
+    percentiles_plot = percentiles + [percentiles[0]]  # Close the plot
+    angles += angles[:1]
+
+    # Plot radar chart
+    ax1.plot(angles, percentiles_plot, 'o-', linewidth=3, color='steelblue', markersize=10)
+    ax1.fill(angles, percentiles_plot, alpha=0.3, color='steelblue')
+    ax1.set_xticks(angles[:-1])
+    ax1.set_xticklabels(categories, size=13, fontweight='500', color='black')
+    ax1.set_ylim(0, 100)
+    ax1.set_yticks([25, 50, 75, 100])
+    ax1.set_yticklabels(['25', '50', '75', '100'], size=11, color='black')
+    ax1.grid(True, linewidth=0.8, alpha=0.4, color='gray')
+    ax1.set_title(f'{selected_person}\nPercentile Rankings',
+                  size=15, pad=25, fontweight='bold', color='black')
+    ax1.tick_params(colors='black')
+    ax1.spines['polar'].set_color('black')
+
+    # Bar chart (right) - Raw Values
+    ax2 = plt.subplot(122)
+    ax2.set_facecolor('white')
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
-    fig.add_trace(
-        go.Bar(
-            x=categories,
-            y=raw_values,
-            name='Raw Value',
-            marker=dict(color=colors),
-            text=[f'{v:.1f}' for v in raw_values],
-            textposition='outside'
-        ),
-        row=1, col=2
-    )
+    bars = ax2.bar(range(len(categories)), raw_values, color=colors, alpha=0.85, width=0.7)
+    ax2.set_xticks(range(len(categories)))
+    ax2.set_xticklabels(categories, rotation=45, ha='right', size=13, fontweight='500', color='black')
+    ax2.set_ylabel('Value', fontsize=14, fontweight='bold', color='black')
+    ax2.tick_params(axis='y', labelsize=11, colors='black')
+    ax2.tick_params(axis='x', colors='black')
+    ax2.set_title(f'{selected_person}\nRaw Values',
+                  size=15, pad=15, fontweight='bold', color='black')
+    ax2.grid(True, axis='y', alpha=0.3, linewidth=0.8, color='gray')
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['bottom'].set_color('black')
+    ax2.spines['left'].set_color('black')
 
-    # Update radial plot layout
-    fig.update_polars(
-        radialaxis=dict(
-            visible=True,
-            range=[0, 100],
-            tickfont=dict(size=10)
-        ),
-        angularaxis=dict(
-            tickfont=dict(size=11)
-        )
-    )
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.1f}',
+                ha='center', va='bottom', fontsize=11, fontweight='bold', color='black')
 
-    # Update bar chart layout
-    fig.update_xaxes(tickangle=45, row=1, col=2)
-    fig.update_yaxes(title_text="Value", row=1, col=2)
+    plt.tight_layout()
 
-    # Update overall layout
-    fig.update_layout(
-        height=500,
-        showlegend=False,
-        title_text=f"Performance Metrics for {selected_person}",
-        title_x=0.5,
-        title_font=dict(size=20)
-    )
-
+    # Display
+    mo.md(f"## Performance Metrics for {selected_person}")
     fig
     return (person_data,)
 
